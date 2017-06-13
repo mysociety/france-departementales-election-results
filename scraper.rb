@@ -5,8 +5,8 @@ require 'require_all'
 require 'scraped'
 require 'scraperwiki'
 
-# require 'open-uri/cached'
-# OpenURI::Cache.cache_path = '.cache'
+require 'open-uri/cached'
+OpenURI::Cache.cache_path = '.cache'
 
 # require_rel 'lib'
 
@@ -22,9 +22,10 @@ class PartyListPage < Scraped::HTML
 end
 
 class ElectionResultsPage < Scraped::HTML
-  field :region_urls do
-    noko.css('#listeRG option/@value').drop(1).map do |result_url|
-      URI.join(url, result_url).to_s
+  field :department_urls do
+    noko.css('#listeDpt option/@value').drop(1).map do |result_url|
+      code = result_url.split('/').first
+      URI.join(url, [code, "#{code}.html"].join('/')).to_s
     end
   end
 end
@@ -59,7 +60,7 @@ parties = scrape(parties_url => PartyListPage).party_lookup
 results_url = 'https://www.interieur.gouv.fr/Elections/Les-resultats/Departementales/elecresult__departementales-2015/(path)/departementales-2015/index.html'
 page = scrape(results_url => ElectionResultsPage)
 
-page.region_urls.each do |url|
+page.department_urls.each do |url|
   region = scrape(url => RegionResultsPage)
   data = region.to_h
   data[:winner_party] = parties[data[:winner_party_code]]
