@@ -78,11 +78,11 @@ class CantonResultsPage < Scraped::HTML
   end
 
   def parent_area
-    area_parts.first.match(/^(?<name>.+) \((?<id>\d+)\)/)
+    area_parts.first.match(/^(?<name>.+) \((?<id>\w+)\)/)
   end
 
   def area
-    area_parts.last.match(/^canton de (?<name>.+) \((?<id>\d+)\)/)
+    area_parts.last.match(/^canton de (?<name>.+) \((?<id>\w+)\)/)
   end
 end
 
