@@ -41,10 +41,20 @@ class DepartmentResultsPage < Scraped::HTML
 end
 
 class CantonResultsPage < Scraped::HTML
-  field :councillor_names do
-    noko.xpath('.//table[1]/tbody/tr[1]/td/text()').take(2).map do |name|
-      HTMLEntities.new.decode(name.to_s)
+  field :councillors do
+    noko.xpath('.//table[1]/tbody/tr[1]/td[1]').children.select(&:text?).map do |councillor|
+      fragment(councillor => Councillor)
     end
+  end
+end
+
+class Councillor < Scraped::HTML
+  field :id do
+    name.parameterize
+  end
+
+  field :name do
+    HTMLEntities.new.decode(noko.text.to_s)
   end
 
   field :area_name do
@@ -64,17 +74,13 @@ class CantonResultsPage < Scraped::HTML
   end
 
   field :party_code do
-    winner_row.xpath('./td[2]').text
+    noko.xpath('../../td[2]').text
   end
 
   private
 
-  def winner_row
-    noko.xpath('.//table[1]/tbody/tr[1]')
-  end
-
   def area_parts
-    noko.at_css('h3').text.split(' - ', 2)
+    noko.xpath('//h3[1]').text.split(' - ', 2)
   end
 
   def parent_area
@@ -90,15 +96,11 @@ parties_url = 'https://www.interieur.gouv.fr/Elections/Les-resultats/Departement
 parties = scrape(parties_url => PartyListPage).party_lookup
 
 results_url = 'https://www.interieur.gouv.fr/Elections/Les-resultats/Departementales/elecresult__departementales-2015/(path)/departementales-2015/index.html'
-page = scrape(results_url => ElectionResultsPage)
 
-page.department_urls.each do |url|
-  department = scrape(url => DepartmentResultsPage)
-  department.canton_urls.each do |canton_url|
-    data = scrape(canton_url => CantonResultsPage).to_h
-    names = data.delete(:councillor_names)
-    names.each do |name|
-      ScraperWiki.save_sqlite([:id], data.merge(name: name, id: name.parameterize, party_name: parties[data[:party_code]]))
+scrape(results_url => ElectionResultsPage).department_urls.each do |department_url|
+  scrape(department_url => DepartmentResultsPage).canton_urls.each do |canton_url|
+    scrape(canton_url => CantonResultsPage).councillors.each do |councillor|
+      ScraperWiki.save_sqlite([:id], councillor.to_h.merge(party_name: parties[councillor.party_code]))
     end
   end
 end
