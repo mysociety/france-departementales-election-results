@@ -74,7 +74,7 @@ class CantonResultsPage < Scraped::HTML
   end
 
   def area_parts
-    noko.at_css('h3').text.split(' - ')
+    noko.at_css('h3').text.split(' - ', 2)
   end
 
   def parent_area
