@@ -77,6 +77,10 @@ class Councillor < Scraped::HTML
     noko.xpath('../../td[2]').text
   end
 
+  field :gender do
+    name.match(/^M\. /) ? 'M' : name.gsub(/^Mme /) ? 'F' : ''
+  end
+
   private
 
   def area_parts
